@@ -225,6 +225,8 @@ a { color: inherit; }
 .nation { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-label); color: var(--text-3);
   margin-left: 6px; white-space: nowrap; vertical-align: 1px; }
 .nation img { width: 18px; height: 13.5px; border-radius: 2px; object-fit: cover; }
+.nation img.wide { width: 27px; object-fit: contain; background: #fff; outline: 1px solid var(--line); outline-offset: -1px; }
+.nation abbr { text-decoration: none; }
 
 .tvline { margin: var(--sp-2) 0 0; font-size: 15px; color: var(--text-2); }
 .tvline a, .tv { color: var(--text); font-weight: 600; text-decoration: none; white-space: nowrap; }

@@ -27,7 +27,8 @@ What the code relies on (details in `lib/model.ts`):
 - Status `NOT_STARTED` / `IN_PROGRESS` / `SCORED`; `SKIPPED` is a bye. While a match is live, `points`
   carries every game including the running one.
 - `walkover: true` marks the side that **won** on a walkover; its 11-0 games are not real.
-- Country: `selected_parents[].parent_abbr` ("SWE", "ETTU2" for neutral athletes); 2025 events only
+- Country: `selected_parents[].parent_abbr` ("SWE"; neutral athletes are "ETTU1" (Belarus) and "ETTU2"
+  (Russia), shown as AIN with ETTU's own flag); 2025 events only
   fill `parent_name` ("Sweden").
 - Class: `category_display_label` – "Men's Singles" (other ETTU events use "U15-BS", "MSU21").
 - Knockout rounds appear in `get_group_matches` once both players are known.

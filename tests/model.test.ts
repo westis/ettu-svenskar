@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fixture from './fixture.json';
+import { displayCode, flagOf } from '../lib/countries';
 import {
   type StageInput,
   applyLive,
@@ -74,7 +75,7 @@ test('2025 events: the country only in parent_name', () => {
   })!;
   assert.equal(m.a.players[0].name, 'Anders Eriksson');
   assert.equal(m.a.players[0].code, 'SWE');
-  assert.equal(m.b.players[0].code, 'BLR');
+  assert.equal(m.b.players[0].code, 'ETTU1'); // Belarus plays as neutral athletes (AIN)
 });
 
 test('byes and foreign matches are not matches', () => {
@@ -201,4 +202,14 @@ test('the live feed overrides the lagging list: status, sets and games', () => {
   assert.equal(m.round, '32-del'); // kept from the list
   assert.equal(untouched, other);
   assert.deepEqual(applyLive([listed], []), [listed]);
+});
+
+test('neutral athletes: ETTU1 / ETTU2 are shown as AIN with ETTU\'s flag', () => {
+  assert.equal(displayCode('ETTU2'), 'AIN');
+  assert.equal(displayCode('ETTU1'), 'AIN');
+  assert.equal(displayCode('SWE'), 'SWE');
+  assert.equal(flagOf('ETTU2')?.src, 'https://storage.googleapis.com/stupaprodsguscentral/flags/ETTU_2_FLAG.png');
+  assert.equal(flagOf('ETTU2')?.wide, true);
+  assert.equal(flagOf('GER')?.src.endsWith('/de.svg'), true);
+  assert.equal(flagOf('XYZ'), null);
 });
