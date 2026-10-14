@@ -3,6 +3,7 @@ import { Familjen_Grotesk, Instrument_Sans } from 'next/font/google';
 import Link from 'next/link';
 import './globals.css';
 import { SITE_NAME } from '@/lib/site';
+import { Logo } from '@/components/Logo';
 
 // The same type pair as STTR: Familjen Grotesk for titles and figures, Instrument Sans for the rest.
 const display = Familjen_Grotesk({ subsets: ['latin', 'latin-ext'], variable: '--font-display-face', display: 'swap' });
@@ -27,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="header">
           <div className="header-in">
             <Link href="/" className="logo">
-              <span className="logo-dot" aria-hidden />
+              <Logo />
               {SITE_NAME}
             </Link>
           </div>

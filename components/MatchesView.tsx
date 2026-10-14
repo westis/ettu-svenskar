@@ -1,18 +1,22 @@
 'use client';
 
-// The event page's body: class and player filters, then Pågår / Kommande / Resultat. The filters
-// live in the URL (?klass=787&spelare=5687) so a filtered view can be shared.
+// The page body: one toggle Kommande | Resultat, two filters (class, player), then the matches by
+// day. The view and filters live in the URL (?visa=resultat&klass=787&spelare=5687) so a view can be
+// shared.
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ClassInfo, HomePlayer, Match } from '@/lib/model';
-import { score, weekdayDate } from '@/lib/format';
+import { weekdayDate } from '@/lib/format';
 import { MatchRow } from './MatchRow';
+
+export type View = 'kommande' | 'resultat';
 
 interface Props {
   matches: Match[];
   classes: ClassInfo[];
   players: HomePlayer[];
   today: string; // "2026-10-14", Swedish time
+  initialView: View | null;
   initialClass: number | null;
   initialPlayer: string | null;
 }
@@ -32,11 +36,7 @@ function DayList({ ms, today, label }: { ms: Match[]; today: string; label: stri
       {byDay(ms).map(([d, list]) => (
         <div key={d || 'none'}>
           <h3 className="day">
-            {d ? (
-              d === today ? <span className="today">Idag · {weekdayDate(d)}</span> : weekdayDate(d)
-            ) : (
-              'Tid ej satt'
-            )}
+            {d ? (d === today ? <span className="today">Idag · {weekdayDate(d)}</span> : weekdayDate(d)) : 'Tid ej satt'}
           </h3>
           <ol className="rows" aria-label={`${label} ${d}`}>
             {list.map((m) => <MatchRow key={m.id} m={m} />)}
@@ -47,18 +47,37 @@ function DayList({ ms, today, label }: { ms: Match[]; today: string; label: stri
   );
 }
 
-export function MatchesView({ matches, classes, players, today, initialClass, initialPlayer }: Props) {
+/** A filter as a dropdown pill; dark when something other than "all" is chosen. */
+function Pick({ label, value, onChange, children }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="pick">
+      <span className="sr-only">{label}</span>
+      <select className={value ? 'on' : undefined} value={value} onChange={(e) => onChange(e.target.value)}>
+        {children}
+      </select>
+    </label>
+  );
+}
+
+export function MatchesView({ matches, classes, players, today, initialView, initialClass, initialPlayer }: Props) {
   const [cls, setCls] = useState<number | null>(initialClass);
   const [player, setPlayer] = useState<string | null>(initialPlayer);
+  const anyAhead = matches.some((m) => m.status !== 'done');
+  const [view, setView] = useState<View>(initialView ?? (anyAhead ? 'kommande' : 'resultat'));
 
   useEffect(() => {
     const u = new URL(window.location.href);
-    if (cls) u.searchParams.set('klass', String(cls));
-    else u.searchParams.delete('klass');
-    if (player) u.searchParams.set('spelare', player);
-    else u.searchParams.delete('spelare');
+    const set = (k: string, v: string | null) => (v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
+    set('visa', view === 'resultat' ? 'resultat' : null);
+    set('klass', cls ? String(cls) : null);
+    set('spelare', player);
     window.history.replaceState(window.history.state, '', u);
-  }, [cls, player]);
+  }, [view, cls, player]);
 
   const shown = useMemo(
     () =>
@@ -80,84 +99,57 @@ export function MatchesView({ matches, classes, players, today, initialClass, in
   return (
     <>
       <div className="controls">
-        {usedClasses.length > 1 && (
-          <div className="chips" role="group" aria-label="Klass">
-            <button type="button" className="chip" aria-pressed={cls === null} onClick={() => setCls(null)}>
-              Alla klasser
-            </button>
-            {usedClasses.map((c) => (
-              <button key={c.id} type="button" className="chip" aria-pressed={cls === c.id}
-                onClick={() => setCls(cls === c.id ? null : c.id)}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-        )}
-        {players.length > 1 && (
-          <div className="chips players-chips" role="group" aria-label="Spelare">
-            <button type="button" className="chip" aria-pressed={player === null} onClick={() => setPlayer(null)}>
-              Alla spelare
-            </button>
-            {players.map((p) => (
-              <button key={p.key} type="button" className="chip" aria-pressed={player === p.key}
-                onClick={() => setPlayer(player === p.key ? null : p.key)}>
-                {p.name}
-                {p.won + p.lost > 0 && (
-                  <span className="rec"><span className="sr-only">vinster och förluster </span>{score(p.won, p.lost)}</span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-        {players.length > 1 && (
-          <label className="pick">
-            <span className="sr-only">Spelare</span>
-            <select className={player ? 'on' : undefined} value={player ?? ''}
-              onChange={(e) => setPlayer(e.target.value || null)}>
+        <div className="seg" role="radiogroup" aria-label="Visa">
+          <button type="button" role="radio" aria-checked={view === 'kommande'} onClick={() => setView('kommande')}>
+            Kommande <span className="seg-n">{live.length + upcoming.length}</span>
+          </button>
+          <button type="button" role="radio" aria-checked={view === 'resultat'} onClick={() => setView('resultat')}>
+            Resultat <span className="seg-n">{done.length}</span>
+          </button>
+        </div>
+        <div className="picks">
+          {usedClasses.length > 1 && (
+            <Pick label="Klass" value={cls ? String(cls) : ''} onChange={(v) => setCls(v ? Number(v) : null)}>
+              <option value="">Alla klasser</option>
+              {usedClasses.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </Pick>
+          )}
+          {players.length > 1 && (
+            <Pick label="Spelare" value={player ?? ''} onChange={(v) => setPlayer(v || null)}>
               <option value="">Alla spelare</option>
               {players.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.name}{p.won + p.lost > 0 ? ` (${score(p.won, p.lost)})` : ''}
-                </option>
+                <option key={p.key} value={p.key}>{p.name}</option>
               ))}
-            </select>
-          </label>
-        )}
+            </Pick>
+          )}
+        </div>
       </div>
 
-      {live.length > 0 && (
-        <section className="section" aria-labelledby="h-live">
-          <h2 className="h2" id="h-live">Pågår</h2>
-          <ol className="rows">{live.map((m) => <MatchRow key={m.id} m={m} />)}</ol>
+      {view === 'kommande' ? (
+        <section className="list" aria-label="Kommande matcher">
+          {live.length > 0 && (
+            <div>
+              <h3 className="day live-head">Pågår nu</h3>
+              <ol className="rows" aria-label="Pågår nu">{live.map((m) => <MatchRow key={m.id} m={m} />)}</ol>
+            </div>
+          )}
+          {upcoming.length > 0 && <DayList ms={upcoming} today={today} label="Kommande" />}
+          {live.length + upcoming.length === 0 && <p className="empty">Inga kommande matcher just nu.</p>}
+        </section>
+      ) : (
+        <section className="list" aria-label="Resultat">
+          {done.length > 0 ? (
+            <>
+              <p className="tally">
+                {won} {won === 1 ? 'vinst' : 'vinster'} · {lost} {lost === 1 ? 'förlust' : 'förluster'}
+              </p>
+              <DayList ms={done} today={today} label="Resultat" />
+            </>
+          ) : (
+            <p className="empty">Inga spelade matcher än.</p>
+          )}
         </section>
       )}
-
-      <section className="section" aria-labelledby="h-next">
-        <h2 className="h2" id="h-next">
-          Kommande <span className="count">{upcoming.length}</span>
-        </h2>
-        {upcoming.length ? (
-          <DayList ms={upcoming} today={today} label="Kommande" />
-        ) : (
-          <p className="empty">Inga kommande matcher just nu.</p>
-        )}
-      </section>
-
-      <section className="section" aria-labelledby="h-done">
-        <h2 className="h2" id="h-done">
-          Resultat
-          {done.length > 0 && (
-            <span className="count">
-              {won} {won === 1 ? 'vinst' : 'vinster'}, {lost} {lost === 1 ? 'förlust' : 'förluster'}
-            </span>
-          )}
-        </h2>
-        {done.length ? (
-          <DayList ms={done} today={today} label="Resultat" />
-        ) : (
-          <p className="empty">Inga spelade matcher än.</p>
-        )}
-      </section>
     </>
   );
 }

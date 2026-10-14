@@ -86,7 +86,7 @@ a { color: inherit; }
 .logo { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700;
   font-size: 19px; text-decoration: none; letter-spacing: -0.01em; white-space: nowrap; }
 @media (max-width: 359px) { .logo { font-size: 16px; gap: 8px; } }
-.logo-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.logo-mark { flex: none; display: block; }
 .page { max-width: var(--content-w); margin: 0 auto; padding: var(--sp-8) var(--gutter) var(--sp-12); }
 .footer { max-width: var(--content-w); margin: 0 auto; padding: 0 var(--gutter) var(--sp-12);
   color: var(--text-3); font-size: var(--fs-small); }
@@ -102,35 +102,40 @@ a { color: inherit; }
 .h2 .count { font-size: var(--fs-small); font-weight: 400; color: var(--text-3); font-family: var(--font-body); }
 .section { margin-top: var(--section-gap); }
 
-/* ---- chips (filters) -------------------------------------------------------------------------- */
-.controls { margin-top: var(--sp-6); display: grid; gap: var(--sp-3); }
-.chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
-@media (max-width: 767px) {
-  .controls { gap: var(--sp-2); }
-  .chips { gap: 6px; }
-  .chip { min-height: 36px; padding: 0 12px; font-size: 14px; }
-}
-.chip { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px;
-  border-radius: var(--r-pill); border: 1px solid var(--line-control); background: transparent; color: var(--text);
-  font: inherit; font-size: 15px; cursor: pointer; white-space: nowrap; transition: background-color var(--t-fast); }
-.chip:hover { background: var(--surface-2); }
-.chip[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
-.chip .rec { font-family: var(--font-display); font-variant-numeric: tabular-nums; color: var(--text-3); font-weight: 400; }
-.chip[aria-pressed="true"] .rec { color: inherit; opacity: 0.75; }
-.pick { display: none; }
+/* ---- controls: the view toggle, then the two filters ------------------------------------------ */
+.controls { margin-top: var(--sp-6); display: grid; gap: var(--sp-3); max-width: 560px; }
+/* Segmented (STTR's k-seg): the one toggle, the loudest control. */
+.seg { display: flex; background: var(--surface-2); border-radius: var(--r-pill); padding: 4px; gap: 4px; }
+.seg > button { flex: 1 1 0; border: 0; background: transparent; font: inherit; font-size: 16px; color: var(--text-2);
+  min-height: 44px; padding: 0 16px; border-radius: var(--r-pill); cursor: pointer; display: inline-flex;
+  align-items: center; justify-content: center; gap: 8px; transition: background-color var(--t-fast), color var(--t-fast); }
+.seg > button:hover { color: var(--text); }
+.seg > button[aria-checked="true"], .seg > button[aria-checked="true"]:hover { background: var(--text); color: var(--bg);
+  font-weight: 600; }
+.seg-n { font-family: var(--font-display); font-variant-numeric: tabular-nums; font-weight: 400; opacity: 0.7; }
+/* Filters: two quiet dropdowns side by side; dark when set. */
+.picks { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.picks:has(> :only-child) { grid-template-columns: 1fr; }
+.pick { position: relative; display: block; min-width: 0; }
 .pick select { appearance: none; -webkit-appearance: none; font: inherit; font-size: 15px; color: var(--text);
   background: transparent; border: 1px solid var(--line-control); border-radius: var(--r-pill); min-height: 40px;
-  padding: 0 40px 0 14px; width: 100%; cursor: pointer; }
+  padding: 0 36px 0 14px; width: 100%; cursor: pointer; text-overflow: ellipsis; }
 .pick select.on { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
-.pick { position: relative; }
-.pick::after { content: ''; position: absolute; right: 16px; top: 50%; width: 8px; height: 8px; margin-top: -6px;
+.pick::after { content: ''; position: absolute; right: 15px; top: 50%; width: 7px; height: 7px; margin-top: -5px;
   border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg);
   pointer-events: none; color: var(--text-2); }
 .pick:has(select.on)::after { color: var(--bg); }
-@media (max-width: 767px) {
-  .players-chips { display: none; }
-  .pick { display: block; }
-}
+.chip { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: var(--r-pill);
+  border: 1px solid var(--line-control); background: transparent; color: var(--text); font: inherit; font-size: 15px;
+  cursor: pointer; }
+.chip:hover { background: var(--surface-2); }
+@media (max-width: 767px) { .controls { max-width: none; } }
+
+/* ---- the list --------------------------------------------------------------------------------- */
+.list { margin-top: var(--sp-6); }
+.list > :first-child .day, .list > .tally + div .day { margin-top: 0; }
+.tally { margin: 0 0 var(--sp-4); font-size: var(--fs-small); color: var(--text-2); }
+.live-head { color: var(--live); }
 
 /* ---- day header ------------------------------------------------------------------------------- */
 .day { font-size: var(--fs-small); color: var(--text-2); font-weight: 600; margin: var(--sp-6) 0 0;

@@ -26,6 +26,7 @@ export async function EventPage({ event, searchParams }: {
   const updated = swedishNow(data.fetchedAt).time;
   const klass = Number(searchParams.klass) || null;
   const spelare = typeof searchParams.spelare === 'string' ? searchParams.spelare : null;
+  const visa = searchParams.visa === 'resultat' ? 'resultat' : searchParams.visa === 'kommande' ? 'kommande' : null;
 
   return (
     <>
@@ -47,6 +48,7 @@ export async function EventPage({ event, searchParams }: {
           classes={classes}
           players={players}
           today={today}
+          initialView={visa}
           initialClass={klass}
           initialPlayer={spelare}
         />

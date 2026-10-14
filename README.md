@@ -6,7 +6,7 @@ refreshed every 30 seconds. Swedish UI, same look as the STTR app.
 
 - `/` – the EM that is on now (else the next one, else the latest); picked by name from ETTU's
   events (`lib/model.ts` `isEM`: youth, U21, team, veteran and test events are left out)
-- Filters: class and player (`?klass=<id>&spelare=<id>`, shareable)
+- A toggle Kommande | Resultat and two filters, class and player (`?visa=resultat&klass=<id>&spelare=<id>`, shareable)
 
 ## Data
 
