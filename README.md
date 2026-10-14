@@ -1,4 +1,4 @@
-# Svenskarna i EM
+# Svenskarna i pingis-EM
 
 Every Swedish match in ETTU's championships (EM, Ungdoms-EM, Europe Top 16 …): class, round, time,
 table, opponents and results, refreshed every 30 seconds. Swedish UI, same look as the STTR app.
