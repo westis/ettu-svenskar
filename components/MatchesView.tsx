@@ -5,6 +5,7 @@
 // shared.
 
 import { useEffect, useMemo, useState } from 'react';
+import { track } from '@vercel/analytics';
 import type { ClassInfo, HomePlayer, Match } from '@/lib/model';
 import { weekdayDate } from '@/lib/format';
 import { MatchRow } from './MatchRow';
@@ -117,7 +118,12 @@ export function MatchesView({ matches, classes, players, today, initialView, ini
             </Pick>
           )}
           {players.length > 1 && (
-            <Pick label="Spelare" value={player ?? ''} onChange={(v) => setPlayer(v || null)}>
+            <Pick label="Spelare" value={player ?? ''} onChange={(v) => {
+              setPlayer(v || null);
+              // custom event: which Swedes people follow (a public name, nothing about the visitor)
+              const name = players.find((p) => p.key === v)?.name;
+              if (name) track('Spelarfilter', { spelare: name });
+            }}>
               <option value="">Alla spelare</option>
               {players.map((p) => (
                 <option key={p.key} value={p.key}>{p.name}</option>

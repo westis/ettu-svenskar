@@ -1,6 +1,7 @@
 import { getEventData } from '@/lib/stupa';
 import { getTvWindows } from '@/lib/svt';
-import { type TvWindow, SVT_PLAY_URL, tvWindowOf } from '@/lib/tv';
+import { type TvWindow, tvWindowOf } from '@/lib/tv';
+import { SvtLink } from './SvtLink';
 import type { EventInfo } from '@/lib/model';
 import { eventTitle, homePlayers } from '@/lib/model';
 import { dateRange, weekdayDate } from '@/lib/format';
@@ -79,9 +80,9 @@ function TvLine({ windows, today }: { windows: TvWindow[]; today: string }) {
   const times = list.map((w) => `${w.from}–${w.to}`).join(', ');
   return (
     <p className="tvline">
-      <a href={SVT_PLAY_URL} target="_blank" rel="noopener noreferrer">
+      <SvtLink plats="rubrik">
         <span aria-hidden>▶</span> {channels}
-      </a>{' '}
+      </SvtLink>{' '}
       {day === today ? 'idag' : weekdayDate(day)} {times}
     </p>
   );

@@ -1,7 +1,7 @@
 import type { Match, Player } from '@/lib/model';
 import { clock, score, weekdayDate } from '@/lib/format';
 import { Nation } from './Nation';
-import { SVT_PLAY_URL } from '@/lib/tv';
+import { SvtLink } from './SvtLink';
 
 /** Text whose last word stays on one line with the flag after it. */
 function WithFlag({ text, code }: { text: string; code: string | null }) {
@@ -91,10 +91,10 @@ export function MatchRow({ m }: { m: Match }) {
             <span key={i} className="nw">{i > 0 && ' · '}{x}</span>
           ))}
           {m.tv && (
-            <a className="tv" href={SVT_PLAY_URL} target="_blank" rel="noopener noreferrer"
-              aria-label={`Se på ${m.tv} (öppnas i ny flik)`}>
+            <SvtLink className="tv" plats="match" spelare={m.a.players.map((p) => p.name).join(' / ')}
+              label={`Se på ${m.tv} (öppnas i ny flik)`}>
               <span aria-hidden>▶</span> {m.tv}
-            </a>
+            </SvtLink>
           )}
         </div>
         {m.next && (

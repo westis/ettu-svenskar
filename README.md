@@ -61,9 +61,14 @@ curl -s https://www.svt.se/sport/bordtennis/guide-bordtennis-em-2026 | npm run -
 
 Vercel Web Analytics (`components/Stats.tsx`): no cookies and nothing stored on the device (a request
 hash, discarded after 24 h), so no consent banner. It must be enabled once in the Vercel dashboard
-(project → Analytics → Enable). The filters rewrite the query string, so only the first page view
-per path and page load is sent, without the query string: one visit = one event (the Hobby plan
-includes 50 000 events a month, shared by all projects on the account; reports cover one month).
+(project → Analytics → Enable). On Pro it is billed per event ($0.03 per 1 000, from the monthly
+usage credit; reports cover 12 months).
+
+- Page views: the filters rewrite the query string, so only the first page view per path and page
+  load is sent, without the query string: one visit = one event.
+- Custom events (`track()`, at most 2 properties each on Pro):
+  - `Spelarfilter` `{ spelare }` when a player is picked in the dropdown (`MatchesView.tsx`)
+  - `SVT-klick` `{ plats: 'match' | 'rubrik', spelare? }` on a "▶ SVT Play" link (`SvtLink.tsx`)
 
 Not covered: EMs before 2025, which are only on results.ettu.site.
 
