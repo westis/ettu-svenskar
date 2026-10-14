@@ -166,6 +166,11 @@ a { color: inherit; }
 .list > :first-child .day, .list > .tally + div .day { margin-top: 0; }
 .tally { margin: 0 0 var(--sp-4); font-size: var(--fs-small); color: var(--text-2); }
 .live-head { color: var(--live); }
+.latest { margin-bottom: var(--sp-2); }
+.latest-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); }
+.textbtn { border: 0; background: none; padding: 0; font: inherit; font-weight: 400; color: var(--text-2); cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.textbtn:hover { color: var(--text); }
 
 /* ---- day header ------------------------------------------------------------------------------- */
 .day { font-size: var(--fs-small); color: var(--text-2); font-weight: 600; margin: var(--sp-6) 0 0;

@@ -1,7 +1,7 @@
 'use client';
 
 // The page body: one toggle Kommande | Resultat, two filters (class, player), then the matches by
-// day. The view and filters live in the URL (?visa=resultat&klass=787&spelare=5687) so a view can be
+// day; Kommande starts with the latest finished match. The view and filters live in the URL (?visa=resultat&klass=787&spelare=5687) so a view can be
 // shared.
 
 import { useEffect, useMemo, useState } from 'react';
@@ -91,6 +91,8 @@ export function MatchesView({ matches, classes, players, today, initialView, ini
   const live = shown.filter((m) => m.status === 'live');
   const upcoming = shown.filter((m) => m.status === 'upcoming');
   const done = shown.filter((m) => m.status === 'done').reverse();
+  // The latest finished match (by start time) heads the Kommande view.
+  const latest = done[0] ?? null;
   const won = done.filter((m) => m.outcome === 'won').length;
   const lost = done.filter((m) => m.outcome === 'lost').length;
 
@@ -127,6 +129,18 @@ export function MatchesView({ matches, classes, players, today, initialView, ini
 
       {view === 'kommande' ? (
         <section className="list" aria-label="Kommande matcher">
+          {latest && (
+            <div className="latest">
+              <h3 className="day latest-head">
+                <span>
+                  Senast avslutad
+                  {latest.start && latest.start.slice(0, 10) !== today && ` · ${weekdayDate(latest.start)}`}
+                </span>
+                <button type="button" className="textbtn" onClick={() => setView('resultat')}>Alla resultat</button>
+              </h3>
+              <ol className="rows" aria-label="Senast avslutad"><MatchRow m={latest} /></ol>
+            </div>
+          )}
           {live.length > 0 && (
             <div>
               <h3 className="day live-head">Pågår nu</h3>
