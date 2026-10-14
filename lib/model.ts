@@ -500,7 +500,12 @@ export interface EventInfo {
   type: string;
 }
 
-const TEST_NAME = /\b(test|demo|copy|temp|dummy|global game|online entry)\b/i;
+const NOT_SENIOR_EM = /\b(youth|junior|cadet|team|veteran|para|test|demo|copy)\b|\bu\s?\d{2}\b/i;
+
+/** The senior individual European Championships ("2026 European Individual Championships"). */
+export function isEM(name: string): boolean {
+  return /\beuropean (individual )?championships\b/i.test(name) && !NOT_SENIOR_EM.test(name);
+}
 
 export function toEvent(e: Raw): EventInfo {
   return {
@@ -513,17 +518,17 @@ export function toEvent(e: Raw): EventInfo {
   };
 }
 
-/** Published individual tournaments, no test events, newest first. */
-export function listedEvents(raw: Raw[]): EventInfo[] {
+/** The EMs among ETTU's published events, newest first. */
+export function emEvents(raw: Raw[]): EventInfo[] {
   return raw
     .filter((e) => e && e.event_type === 'T' && e.published !== false && !e.is_deleted)
     .map(toEvent)
-    .filter((e) => e.name && !TEST_NAME.test(e.name))
+    .filter((e) => isEM(e.name))
     .sort((x, y) => (y.start ?? '').localeCompare(x.start ?? '') || y.id - x.id);
 }
 
-/** The event to open by default: one that is on today, else the next one, else the latest. */
-export function defaultEvent(events: EventInfo[], today: string): EventInfo | null {
+/** The EM to show: the one on today, else the next one, else the latest. */
+export function currentEvent(events: EventInfo[], today: string): EventInfo | null {
   const on = events.find((e) => e.start && e.end && e.start <= today && today <= e.end);
   if (on) return on;
   const next = events
@@ -532,18 +537,8 @@ export function defaultEvent(events: EventInfo[], today: string): EventInfo | nu
   return next ?? events[0] ?? null;
 }
 
-/** "2026 European Individual Championships" -> "EM 2026"; unknown names stay as they are. */
-export function shortEventName(name: string, start?: string | null): string {
-  const year = name.match(/\b(20\d\d)\b/)?.[1] ?? start?.slice(0, 4) ?? '';
-  const age = name.match(/\bU\s?(\d{2})\b/i)?.[1];
-  const rules: Array<[RegExp, string]> = [
-    [/youth championships/i, 'Ungdoms-EM'],
-    [/team championships/i, 'Lag-EM'],
-    [/top\s?16/i, 'Europe Top 16'],
-    [/top\s?10/i, 'Europe Youth Top 10'],
-    [/u\s?\d{2}.*championships|championships.*u\s?\d{2}/i, `U${age}-EM`],
-    [/european (individual )?championships/i, 'EM'],
-  ];
-  const hit = rules.find(([re]) => re.test(name));
-  return hit ? `${hit[1]} ${year}`.trim() : name;
+/** "EM 2026" */
+export function eventTitle(e: EventInfo): string {
+  const year = e.name.match(/\b(20\d\d)\b/)?.[1] ?? e.start?.slice(0, 4) ?? '';
+  return `EM ${year}`.trim();
 }

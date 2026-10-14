@@ -10,7 +10,7 @@ const body = Instrument_Sans({ subsets: ['latin', 'latin-ext'], variable: '--fon
 
 export const metadata: Metadata = {
   title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
-  description: 'Alla svenska matcher i ETTU:s mästerskap: tider, motståndare och resultat.',
+  description: 'Alla svenska matcher i bordtennis-EM: tider, motståndare och resultat.',
 };
 
 export const viewport: Viewport = {
@@ -30,9 +30,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="logo-dot" aria-hidden />
               {SITE_NAME}
             </Link>
-            <nav className="nav" aria-label="Huvudmeny">
-              <Link href="/tavlingar">Tävlingar</Link>
-            </nav>
           </div>
         </header>
         <main id="main" className="page">{children}</main>

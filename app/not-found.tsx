@@ -4,7 +4,7 @@ export default function NotFound() {
   return (
     <>
       <h1 className="title">Hittades inte</h1>
-      <p className="meta">Tävlingen finns inte hos ETTU. <Link href="/tavlingar">Alla tävlingar</Link></p>
+      <p className="meta">Sidan finns inte. <Link href="/">Till EM</Link></p>
     </>
   );
 }

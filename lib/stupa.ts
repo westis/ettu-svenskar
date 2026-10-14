@@ -15,7 +15,7 @@ import {
   classLabel,
   classSort,
   isIndividual,
-  listedEvents,
+  emEvents,
   stageMatches,
   withNext,
 } from './model';
@@ -90,9 +90,10 @@ async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Pr
 
 // ---- public functions ----------------------------------------------------------------------
 
+/** ETTU's EMs (senior, individual), newest first. */
 export async function getEvents(): Promise<EventInfo[]> {
   const { value } = await cached('events', 10 * 60_000, async () =>
-    listedEvents((await getJson('/ott/v1/get_events?published=true')) ?? []),
+    emEvents((await getJson('/ott/v1/get_events?published=true')) ?? []),
   );
   return value;
 }
@@ -105,20 +106,10 @@ export interface EventData {
   fetchedAt: number;
   /** A part could not be refreshed and older data is shown. */
   stale: boolean;
-  /** The event has team classes, which this app does not show (their singles are inside ties). */
-  hasTeamClasses: boolean;
 }
 
-export async function getEventData(eventId: number): Promise<EventData | null> {
-  const events = await getEvents();
-  let event = events.find((e) => e.id === eventId) ?? null;
-  if (!event) {
-    // Not in the cached list: maybe published since. An unpublished id answers with an empty body.
-    const raw: Raw[] = await getJson(`/ott/v1/get_events?published=true&event_ids=${eventId}`).catch(() => []);
-    event = listedEvents(Array.isArray(raw) ? raw : []).find((e) => e.id === eventId) ?? null;
-  }
-  if (!event) return null;
-
+export async function getEventData(event: EventInfo): Promise<EventData> {
+  const eventId = event.id;
   const cats = await cached(`cats:${eventId}`, 10 * 60_000, async () =>
     ((await getJson(`/ott/v1/get_events_categories?event_id=${eventId}&sort_by_id=true&include_subcategories=true`)) ?? []) as Raw[],
   );
@@ -127,7 +118,6 @@ export async function getEventData(eventId: number): Promise<EventData | null> {
     .map((c: Raw) => ({ id: Number(c.id), label: classLabel(c) }))
     .sort((x: ClassInfo, y: ClassInfo) => classSort(x.label) - classSort(y.label) || x.label.localeCompare(y.label) || x.id - y.id);
 
-  const hasTeamClasses = cats.value.some((c: Raw) => c.participant_type_id === 2);
   let stale = cats.stale;
   const stageLists = await Promise.all(
     classes.map(async (c) => {
@@ -171,5 +161,5 @@ export async function getEventData(eventId: number): Promise<EventData | null> {
     perStage.flatMap((s) => s.matches),
     perStage.flatMap((s) => (s.bracket ? [s.bracket] : [])),
   );
-  return { event, classes, matches, fetchedAt, stale, hasTeamClasses };
+  return { event, classes, matches, fetchedAt, stale };
 }

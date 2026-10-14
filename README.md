@@ -1,11 +1,11 @@
 # Svenskarna i pingis-EM
 
-Every Swedish match in ETTU's championships (EM, Ungdoms-EM, Europe Top 16 …): class, round, time,
-table, opponents and results, refreshed every 30 seconds. Swedish UI, same look as the STTR app.
+Every Swedish match in the table tennis European Championships (EM, the senior individual
+championships): class, round, time, table, opponents, results and each winner's next match,
+refreshed every 30 seconds. Swedish UI, same look as the STTR app.
 
-- `/` – the championship that is on now (else the next one, else the latest)
-- `/tavling/<id>` – any ETTU event, e.g. `/tavling/167` = 2026 European Individual Championships
-- `/tavlingar` – all ETTU individual events
+- `/` – the EM that is on now (else the next one, else the latest); picked by name from ETTU's
+  events (`lib/model.ts` `isEM`: youth, U21, team, veteran and test events are left out)
 - Filters: class and player (`?klass=<id>&spelare=<id>`, shareable)
 
 ## Data
@@ -29,7 +29,7 @@ What the code relies on (details in `lib/model.ts`):
 - `walkover: true` marks the side that **won** on a walkover; its 11-0 games are not real.
 - Country: `selected_parents[].parent_abbr` ("SWE", "ETTU2" for neutral athletes); 2025 events only
   fill `parent_name` ("Sweden").
-- Class: `category_display_label` – "Men's Singles", "U15-BS", "MSU21".
+- Class: `category_display_label` – "Men's Singles" (other ETTU events use "U15-BS", "MSU21").
 - Knockout rounds appear in `get_group_matches` once both players are known.
   `get_knockout_matches?stage_id=…&only_published_rounds=true` has the whole bracket in advance
   (times and tables included; `show_schedule_details: false` = time not published yet). The next
@@ -40,8 +40,7 @@ What the code relies on (details in `lib/model.ts`):
   answer is kept, so a failed refresh shows slightly older data with a notice.
 - Its CORS rules reject other sites, so all calls are made on the server (Next.js route rendering).
 
-Not covered: team classes (Lag-EM; their singles are inside ties) and events before 2025, which are
-only on results.ettu.site.
+Not covered: EMs before 2025, which are only on results.ettu.site.
 
 This is not an official ETTU or SBTF service. Be gentle with the API: the server caches each stage
 for 30 s (finished stages 10 min).

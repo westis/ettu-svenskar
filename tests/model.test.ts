@@ -6,12 +6,13 @@ import fixture from './fixture.json';
 import {
   type StageInput,
   classLabel,
-  defaultEvent,
+  currentEvent,
   displayName,
   homePlayers,
-  listedEvents,
+  emEvents,
+  eventTitle,
+  isEM,
   roundLabel,
-  shortEventName,
   toMatch,
 } from '../lib/model';
 
@@ -162,26 +163,23 @@ test('players with wins and losses', () => {
   assert.deepEqual(hp.map((p) => p.name), ['Filippa Bergand', 'Anders Eriksson', 'Truls Moregård', 'Elias Ranefur']);
 });
 
-test('events: no test events, the running one by default', () => {
+test('only the senior individual EM; the one on now by default', () => {
   const raw = [
     { id: 159, event_type: 'T', name: 'TEST ( ETTU Ljubljana)', event_start_date: '2026-10-11', event_end_date: '2026-10-18' },
     { id: 167, event_type: 'T', name: '2026 European Individual Championships', event_start_date: '2026-10-11', event_end_date: '2026-10-18' },
     { id: 139, event_type: 'L', name: '2026/27 HYLO ETTU Champions League Men', event_start_date: '2026-09-01', event_end_date: '2027-05-01' },
     { id: 133, event_type: 'T', name: '2026 European Youth Championships', event_start_date: '2026-07-10', event_end_date: '2026-07-19' },
+    { id: 71, event_type: 'T', name: '2025 European Team Championships', event_start_date: '2025-10-12', event_end_date: '2025-10-19' },
+    { id: 22, event_type: 'T', name: 'European U21 Championships', event_start_date: '2025-03-01', event_end_date: '2025-03-05' },
+    { id: 96, event_type: 'T', name: '2026 CCB Europe Top16 Cup', event_start_date: '2026-02-07', event_end_date: '2026-02-08' },
+    { id: 900, event_type: 'T', name: '2027 European Championships', event_start_date: '2027-09-01', event_end_date: '2027-09-08' },
   ];
-  const ev = listedEvents(raw);
-  assert.deepEqual(ev.map((e) => e.id), [167, 133]);
-  assert.equal(defaultEvent(ev, '2026-10-14')?.id, 167);
-  assert.equal(defaultEvent(ev, '2026-11-01')?.id, 167);
-  assert.equal(defaultEvent(ev, '2026-07-01')?.id, 133);
-});
-
-test('short event names', () => {
-  assert.equal(shortEventName('2026 European Individual Championships'), 'EM 2026');
-  assert.equal(shortEventName('2025 European Team Championships'), 'Lag-EM 2025');
-  assert.equal(shortEventName('2025 European Youth Championships (Ostrava, CZE)'), 'Ungdoms-EM 2025');
-  assert.equal(shortEventName('European U21 Championships', '2025-03-01'), 'U21-EM 2025');
-  assert.equal(shortEventName('Romstal EC U21 Cluj', '2026-02-01'), 'Romstal EC U21 Cluj');
-  assert.equal(shortEventName('2026 CCB Europe Top16 Cup'), 'Europe Top 16 2026');
-  assert.equal(shortEventName('2026 JOOLA Europe Youth Series Czechia Open'), '2026 JOOLA Europe Youth Series Czechia Open');
+  const ev = emEvents(raw);
+  assert.deepEqual(ev.map((e) => e.id), [900, 167]);
+  assert.equal(currentEvent(ev, '2026-10-14')?.id, 167);
+  assert.equal(currentEvent(ev, '2026-11-01')?.id, 900);
+  assert.equal(currentEvent(emEvents(raw.filter((e) => e.id !== 900)), '2026-11-01')?.id, 167);
+  assert.equal(eventTitle(ev[1]), 'EM 2026');
+  assert.equal(isEM('2026 European Individual Championships'), true);
+  assert.equal(isEM('European Veterans Championships 2027'), false);
 });

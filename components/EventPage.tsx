@@ -1,6 +1,6 @@
-import { notFound } from 'next/navigation';
 import { getEventData } from '@/lib/stupa';
-import { homePlayers, shortEventName } from '@/lib/model';
+import type { EventInfo } from '@/lib/model';
+import { eventTitle, homePlayers } from '@/lib/model';
 import { dateRange } from '@/lib/format';
 import { AutoRefresh } from './AutoRefresh';
 import { MatchesView } from './MatchesView';
@@ -15,13 +15,12 @@ function swedishNow(ms: number): { date: string; time: string } {
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
 }
 
-export async function EventPage({ eventId, searchParams }: {
-  eventId: number;
+export async function EventPage({ event, searchParams }: {
+  event: EventInfo;
   searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const data = await getEventData(eventId);
-  if (!data) notFound();
-  const { event, classes, matches } = data;
+  const data = await getEventData(event);
+  const { classes, matches } = data;
   const players = homePlayers(matches);
   const today = swedishNow(Date.now()).date;
   const updated = swedishNow(data.fetchedAt).time;
@@ -30,7 +29,7 @@ export async function EventPage({ eventId, searchParams }: {
 
   return (
     <>
-      <h1 className="title">{shortEventName(event.name, event.start)}</h1>
+      <h1 className="title">{eventTitle(event)}</h1>
       <p className="meta">
         {event.start ? `${dateRange(event.start, event.end)} · ` : ''}
         {matches.length} matcher · uppdaterad {updated}
@@ -38,12 +37,9 @@ export async function EventPage({ eventId, searchParams }: {
       {data.stale && (
         <p className="notice" role="status">ETTU svarar inte just nu. Du ser de senast hämtade resultaten.</p>
       )}
-      {data.hasTeamClasses && (
-        <p className="notice">Lagklasserna visas inte här, bara singel och dubbel.</p>
-      )}
       {matches.length === 0 ? (
         <p className="empty" style={{ marginTop: 'var(--sp-8)' }}>
-          {classes.length ? 'Inga svenska matcher i den här tävlingen än.' : 'Tävlingen har bara lagklasser.'}
+          Inga svenska matcher i EM än.
         </p>
       ) : (
         <MatchesView
