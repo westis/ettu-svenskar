@@ -39,6 +39,12 @@ export async function EventPage({ event, searchParams }: {
         {matches.length} matcher · uppdaterad {updated}
       </p>
       <TvLine windows={tv} today={today} />
+      <p className="linkline">
+        {/* ettu.tv keeps the chosen class out of its URL, so this opens its draw page (men's singles first) */}
+        <a href={`https://www.ettu.tv/events/${event.id}/4/1/5/5`} target="_blank" rel="noopener noreferrer">
+          Lottning och resultat på ettu.tv <span aria-hidden>↗</span>
+        </a>
+      </p>
       {data.stale && (
         <p className="notice" role="status">ETTU svarar inte just nu. Du ser de senast hämtade resultaten.</p>
       )}
