@@ -1,9 +1,10 @@
 /*
  * Tokens from STTR's style guide (sttr-app/app/globals.css): the same palette, type and spacing, so the
- * two apps look like siblings. Light by default, dark from the system setting.
+ * two apps look like siblings. The theme follows the system unless the header toggle chose one
+ * (html[data-theme="light" | "dark"], set before paint by the script in app/layout.tsx).
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --bg: #FAF9F6;
   --surface: #FFFFFF;
   --surface-2: #F1EEE8;
@@ -37,7 +38,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #121110;
     --surface: #1A1917;
     --surface-2: #24221F;
@@ -51,6 +53,21 @@
     --on-win: #16140F;
     --live: #E8455A;
   }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121110;
+  --surface: #1A1917;
+  --surface-2: #24221F;
+  --text: #F2EFE8;
+  --text-2: #B5AFA4;
+  --text-3: #9A9488;
+  --line: #2D2A26;
+  --line-control: #6E685E;
+  --accent: #E8455A;
+  --win: #2FA466;
+  --on-win: #16140F;
+  --live: #E8455A;
 }
 
 @media (max-width: 1023px) { :root { --gutter: 32px; } }
@@ -87,6 +104,18 @@ a { color: inherit; }
   font-size: 19px; text-decoration: none; letter-spacing: -0.01em; white-space: nowrap; }
 @media (max-width: 359px) { .logo { font-size: 16px; gap: 8px; } }
 .logo-mark { flex: none; display: block; }
+/* Theme toggle: shows the moon in light, the sun in dark (the theme it switches to). */
+.theme-btn { flex: none; width: 40px; height: 40px; border-radius: var(--r-pill); border: 1px solid var(--line);
+  background: transparent; color: var(--text-2); display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background-color var(--t-fast), color var(--t-fast); }
+.theme-btn:hover { background: var(--surface-2); color: var(--text); }
+.theme-btn .sun { display: none; }
+:root[data-theme="dark"] .theme-btn .sun { display: block; }
+:root[data-theme="dark"] .theme-btn .moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-btn .sun { display: block; }
+  :root:not([data-theme="light"]) .theme-btn .moon { display: none; }
+}
 .page { max-width: var(--content-w); margin: 0 auto; padding: var(--sp-8) var(--gutter) var(--sp-12); }
 .footer { max-width: var(--content-w); margin: 0 auto; padding: 0 var(--gutter) var(--sp-12);
   color: var(--text-3); font-size: var(--fs-small); }
@@ -120,6 +149,7 @@ a { color: inherit; }
 .pick select { appearance: none; -webkit-appearance: none; font: inherit; font-size: 15px; color: var(--text);
   background: transparent; border: 1px solid var(--line-control); border-radius: var(--r-pill); min-height: 40px;
   padding: 0 36px 0 14px; width: 100%; cursor: pointer; text-overflow: ellipsis; }
+.pick select option { background: var(--surface); color: var(--text); font-weight: 400; }
 .pick select.on { background: var(--text); color: var(--bg); border-color: var(--text); font-weight: 600; }
 .pick::after { content: ''; position: absolute; right: 15px; top: 50%; width: 7px; height: 7px; margin-top: -5px;
   border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg);
@@ -157,7 +187,9 @@ a { color: inherit; }
 .row-home .lost-name { color: var(--text-2); }
 .row-opp { color: var(--text-2); line-height: 1.3; margin-top: 3px; }
 .row-opp .vs { color: var(--text-3); }
-.row-info { font-size: var(--fs-small); color: var(--text-3); margin-top: 4px; }
+.row-info { font-size: var(--fs-small); color: var(--text-3); margin-top: 4px; display: flex; flex-wrap: wrap;
+  column-gap: 0; row-gap: 2px; }
+.row-info .nw { white-space: pre; }
 .row-next { font-size: var(--fs-small); color: var(--text-2); margin-top: 6px; }
 .row-next b { color: var(--text); font-weight: 600; }
 .row-next-when { color: var(--text-3); }
@@ -194,6 +226,10 @@ a { color: inherit; }
   margin-left: 6px; white-space: nowrap; vertical-align: 1px; }
 .nation img { width: 18px; height: 13.5px; border-radius: 2px; object-fit: cover; }
 
+.tvline { margin: var(--sp-2) 0 0; font-size: 15px; color: var(--text-2); }
+.tvline a, .tv { color: var(--text); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.tvline a:hover, .tv:hover { text-decoration: underline; text-underline-offset: 3px; }
+.tv { margin-left: 8px; font-size: var(--fs-small); }
 .empty { color: var(--text-2); padding: var(--sp-4) 0; margin: 0; }
 .notice { margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line-control);
   border-radius: var(--r-sm); font-size: var(--fs-small); color: var(--text-2); }

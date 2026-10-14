@@ -1,7 +1,9 @@
 import { getEventData } from '@/lib/stupa';
+import { getTvWindows } from '@/lib/svt';
+import { type TvWindow, SVT_PLAY_URL, tvWindowOf } from '@/lib/tv';
 import type { EventInfo } from '@/lib/model';
 import { eventTitle, homePlayers } from '@/lib/model';
-import { dateRange } from '@/lib/format';
+import { dateRange, weekdayDate } from '@/lib/format';
 import { AutoRefresh } from './AutoRefresh';
 import { MatchesView } from './MatchesView';
 
@@ -19,8 +21,9 @@ export async function EventPage({ event, searchParams }: {
   event: EventInfo;
   searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const data = await getEventData(event);
-  const { classes, matches } = data;
+  const [data, tv] = await Promise.all([getEventData(event), getTvWindows(event)]);
+  const classes = data.classes;
+  const matches = data.matches.map((m) => ({ ...m, tv: tvWindowOf(m, tv)?.channel ?? null }));
   const players = homePlayers(matches);
   const today = swedishNow(Date.now()).date;
   const updated = swedishNow(data.fetchedAt).time;
@@ -35,6 +38,7 @@ export async function EventPage({ event, searchParams }: {
         {event.start ? `${dateRange(event.start, event.end)} · ` : ''}
         {matches.length} matcher · uppdaterad {updated}
       </p>
+      <TvLine windows={tv} today={today} />
       {data.stale && (
         <p className="notice" role="status">ETTU svarar inte just nu. Du ser de senast hämtade resultaten.</p>
       )}
@@ -56,5 +60,23 @@ export async function EventPage({ event, searchParams }: {
       {/* faster while a Swedish match is on: the live feed changes every point */}
       <AutoRefresh seconds={matches.some((m) => m.status === 'live') ? 10 : 30} />
     </>
+  );
+}
+
+/** "På SVT Play idag 15:45–17:30, 19:00–21:30", else the next day with a broadcast. */
+function TvLine({ windows, today }: { windows: TvWindow[]; today: string }) {
+  const days = [...new Set(windows.map((w) => w.date))].filter((d) => d >= today).sort();
+  if (!days.length) return null;
+  const day = days[0];
+  const list = windows.filter((w) => w.date === day);
+  const channels = [...new Set(list.map((w) => w.channel))].join(' och ');
+  const times = list.map((w) => `${w.from}–${w.to}`).join(', ');
+  return (
+    <p className="tvline">
+      <a href={SVT_PLAY_URL} target="_blank" rel="noopener noreferrer">
+        <span aria-hidden>▶</span> {channels}
+      </a>{' '}
+      {day === today ? 'idag' : weekdayDate(day)} {times}
+    </p>
   );
 }

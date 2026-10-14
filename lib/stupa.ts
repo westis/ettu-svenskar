@@ -20,6 +20,7 @@ import {
   withNext,
   applyLive,
 } from './model';
+import { cacheAt, cached } from './cache';
 
 const BASE = 'https://testbackend.stupaevents.com';
 const TENANT = 'ettu';
@@ -51,42 +52,6 @@ async function getJson(path: string): Promise<Raw> {
     }
   }
   throw new Error(`Stupa ${path}: ${last}`);
-}
-
-// ---- a small stale-if-error cache (per server instance) --------------------------------------
-
-interface Entry {
-  value: unknown;
-  at: number;
-  pending?: Promise<unknown>;
-}
-const cache = new Map<string, Entry>();
-
-async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<{ value: T; stale: boolean }> {
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < ttlMs) return { value: hit.value as T, stale: false };
-  const pending =
-    (hit?.pending as Promise<T> | undefined) ??
-    load().then(
-      (value) => {
-        cache.set(key, { value, at: Date.now() });
-        return value;
-      },
-      (err) => {
-        const e = cache.get(key);
-        if (e) e.pending = undefined;
-        throw err;
-      },
-    );
-  if (hit) hit.pending = pending;
-  else cache.set(key, { value: undefined, at: 0, pending });
-  try {
-    return { value: await pending, stale: false };
-  } catch (err) {
-    if (hit && hit.at > 0) return { value: hit.value as T, stale: true };
-    cache.delete(key);
-    throw err;
-  }
 }
 
 // ---- public functions ----------------------------------------------------------------------
@@ -153,7 +118,7 @@ export async function getEventData(event: EventInfo): Promise<EventData> {
         }).catch(() => null);
         if (kb) bracket = { classId: cls.id, classLabel: cls.label, stageName, rounds: kb.value };
       }
-      return { matches: r.value.matches, bracket, at: cache.get(`gm:${stage.id}`)?.at ?? Date.now() };
+      return { matches: r.value.matches, bracket, at: cacheAt(`gm:${stage.id}`) ?? Date.now() };
     }),
   );
 
@@ -166,7 +131,7 @@ export async function getEventData(event: EventInfo): Promise<EventData> {
     return (Array.isArray(d) ? d : []) as Raw[];
   }).catch(() => null);
 
-  const ats = [...perStage.map((s) => s.at), ...(live ? [cache.get(`live:${eventId}`)?.at ?? 0] : [])];
+  const ats = [...perStage.map((s) => s.at), ...(live ? [cacheAt(`live:${eventId}`) ?? 0] : [])];
   const fetchedAt = ats.length ? Math.max(...ats) : Date.now();
   const matches = applyLive(
     withNext(

@@ -1,6 +1,7 @@
 import type { Match, Player } from '@/lib/model';
 import { clock, score, weekdayDate } from '@/lib/format';
 import { Nation } from './Nation';
+import { SVT_PLAY_URL } from '@/lib/tv';
 
 /** Text whose last word stays on one line with the flag after it. */
 function WithFlag({ text, code }: { text: string; code: string | null }) {
@@ -65,8 +66,7 @@ export function MatchRow({ m }: { m: Match }) {
   const walkover = m.a.walkover || m.b.walkover;
   const hiddenTime = m.status === 'upcoming' && !!m.start && !m.timeKnown;
   const info = [m.classLabel, m.round, m.table ? `Bord ${m.table}` : null, hiddenTime ? 'tid ej klar' : null]
-    .filter(Boolean)
-    .join(' · ');
+    .filter((x): x is string => !!x);
   const time = m.start ? (m.timeKnown ? clock(m.start) : '–') : '';
 
   return (
@@ -85,7 +85,18 @@ export function MatchRow({ m }: { m: Match }) {
           <span className="vs">mot </span>
           {m.b.players.length ? <SideNames players={m.b.players} flagHome={m.derby} /> : m.oppLabel}
         </div>
-        <div className="row-info">{info}</div>
+        <div className="row-info">
+          {/* each part stays whole ("Bord 1"); the line breaks only between parts */}
+          {info.map((x, i) => (
+            <span key={i} className="nw">{i > 0 && ' · '}{x}</span>
+          ))}
+          {m.tv && (
+            <a className="tv" href={SVT_PLAY_URL} target="_blank" rel="noopener noreferrer"
+              aria-label={`Se på ${m.tv} (öppnas i ny flik)`}>
+              <span aria-hidden>▶</span> {m.tv}
+            </a>
+          )}
+        </div>
         {m.next && (
           <div className="row-next">
             <b>Nästa:</b> {m.next.round} mot {m.next.opp}

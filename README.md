@@ -44,6 +44,18 @@ What the code relies on (details in `lib/model.ts`):
   answer is kept, so a failed refresh shows slightly older data with a notice.
 - Its CORS rules reject other sites, so all calls are made on the server (Next.js route rendering).
 
+## TV (SVT)
+
+Matches that start inside an SVT broadcast window get a "▶ SVT Play" link (svtplay.se/bordtennis-em-1),
+and the page lists today's broadcast times. The windows come from SVT's guide
+(svt.se/sport/bordtennis/guide-bordtennis-em-2026). SVT's CDN (Akamai) refuses requests from Node,
+so the server's live attempt usually fails and the schedule bundled in `lib/tv-schedule.json` is
+used. When SVT changes the guide, rebuild it with curl and commit:
+
+```bash
+curl -s https://www.svt.se/sport/bordtennis/guide-bordtennis-em-2026 | npm run --silent tv
+```
+
 Not covered: EMs before 2025, which are only on results.ettu.site.
 
 This is not an official ETTU or SBTF service. Be gentle with the API: the server caches each stage

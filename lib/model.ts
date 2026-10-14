@@ -55,6 +55,8 @@ export interface Match {
   oppLabel: string | null;
   /** For a knockout win: the Swedish side's next match. */
   next: NextInfo | null;
+  /** The channel when the match starts inside an SVT broadcast window ("SVT Play"). */
+  tv?: string | null;
 }
 
 export interface NextInfo {
