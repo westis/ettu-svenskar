@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="footer">
           <div className="footer-in">
             <p>
-              Data från <a href="https://www.ettu.tv/">ettu.tv</a>, uppdateras var 30:e sekund. Tider i arrangörens lokala tid.
+              Data från <a href="https://www.ettu.tv/">ettu.tv</a>, uppdateras var 10:e sekund under pågående matcher. Tider i arrangörens lokala tid.
             </p>
             <p>Ingen officiell tjänst från ETTU eller Svenska Bordtennisförbundet.</p>
           </div>

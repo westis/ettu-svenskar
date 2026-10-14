@@ -354,6 +354,25 @@ export function byStart(x: Match, y: Match): number {
   return classSort(x.classLabel) - classSort(y.classLabel) || x.id - y.id;
 }
 
+// ---- live scores ---------------------------------------------------------------------------------
+
+/**
+ * Overlays the live feed (`get_live_scored_matches?only_in_progress=true`, point by point) on the
+ * match list, which ETTU syncs only every minute or two. Same match shape; status, sets and games
+ * come from the feed, everything else (round, next match) stays.
+ */
+export function applyLive(matches: Match[], live: Raw[]): Match[] {
+  const byId = new Map<number, Raw>((live ?? []).map((m: Raw) => [Number(m?.id), m]));
+  if (!byId.size) return matches;
+  return matches.map((x) => {
+    const raw = byId.get(x.id);
+    if (!raw) return x;
+    const y = toMatch(raw, { classId: x.classId, classLabel: x.classLabel, stageName: '', groups: [] }, null);
+    if (!y || y.status === 'upcoming') return x;
+    return { ...x, status: y.status, a: y.a, b: y.b, games: y.games, outcome: y.outcome };
+  });
+}
+
 // ---- next match from the bracket --------------------------------------------------------------
 
 export interface BracketInput {

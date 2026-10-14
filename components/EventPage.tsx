@@ -53,7 +53,8 @@ export async function EventPage({ event, searchParams }: {
           initialPlayer={spelare}
         />
       )}
-      <AutoRefresh seconds={30} />
+      {/* faster while a Swedish match is on: the live feed changes every point */}
+      <AutoRefresh seconds={matches.some((m) => m.status === 'live') ? 10 : 30} />
     </>
   );
 }

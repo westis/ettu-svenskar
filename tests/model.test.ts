@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import fixture from './fixture.json';
 import {
   type StageInput,
+  applyLive,
   classLabel,
   currentEvent,
   displayName,
@@ -182,4 +183,22 @@ test('only the senior individual EM; the one on now by default', () => {
   assert.equal(eventTitle(ev[1]), 'EM 2026');
   assert.equal(isEM('2026 European Individual Championships'), true);
   assert.equal(isEM('European Veterans Championships 2027'), false);
+});
+
+test('the live feed overrides the lagging list: status, sets and games', () => {
+  const listed = run('moregard_r64')!; // the list still says NOT_STARTED
+  const f = (fixture as any[]).find((x) => x.label === 'moregard_r64');
+  const feed = clone(f.match);
+  feed.status = 'IN_PROGRESS';
+  feed.participants[0].sets_won = 1;
+  feed.participants[0].points = [11, 6, 0, 0, 0];
+  feed.participants[1].points = [9, 8, 0, 0, 0];
+  const other = { ...listed, id: listed.id + 1 };
+  const [m, untouched] = applyLive([{ ...listed, next: null }, other], [feed]);
+  assert.equal(m.status, 'live');
+  assert.deepEqual([m.a.sets, m.b.sets], [1, 0]);
+  assert.deepEqual(m.games, [[11, 9], [6, 8]]);
+  assert.equal(m.round, '32-del'); // kept from the list
+  assert.equal(untouched, other);
+  assert.deepEqual(applyLive([listed], []), [listed]);
 });

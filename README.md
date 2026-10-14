@@ -2,7 +2,7 @@
 
 Every Swedish match in the table tennis European Championships (EM, the senior individual
 championships): class, round, time, table, opponents, results and each winner's next match,
-refreshed every 30 seconds. Swedish UI, same look as the STTR app.
+refreshed every 10 seconds while a match is live (else 30). Swedish UI, same look as the STTR app.
 
 - `/` – the EM that is on now (else the next one, else the latest); picked by name from ETTU's
   events (`lib/model.ts` `isEM`: youth, U21, team, veteran and test events are left out)
@@ -36,6 +36,10 @@ What the code relies on (details in `lib/model.ts`):
   match of a winner is round + 1, position ⌈order/2⌉; its other slot is fed by the neighbouring
   match (order ± 1). The app uses this for "Nästa: …" and for Kommande rows whose opponent is not
   decided yet ("vinnaren av A – B"). An empty slot has no `participant_details`; a bye is "BYE".
+- Live scores: `get_live_scored_matches?event_id=…&only_in_progress=true` is point by point
+  (`sequence_number` +1 per point) and is overlaid on the match list, which ETTU syncs only every
+  1–2 minutes. The page refreshes every 10 s while a Swedish match is live (else 30 s); the feed is
+  cached 5 s on the server.
 - The API sometimes answers `{"msg":"SOME_ERROR_OCCURRED"}`; every call is retried and the last good
   answer is kept, so a failed refresh shows slightly older data with a notice.
 - Its CORS rules reject other sites, so all calls are made on the server (Next.js route rendering).

@@ -18,6 +18,7 @@ import {
   emEvents,
   stageMatches,
   withNext,
+  applyLive,
 } from './model';
 
 const BASE = 'https://testbackend.stupaevents.com';
@@ -102,7 +103,7 @@ export interface EventData {
   event: EventInfo;
   classes: ClassInfo[];
   matches: Match[];
-  /** When the oldest part of the shown data was fetched (ms). */
+  /** When the newest data was fetched (ms): the live feed while a match is on. */
   fetchedAt: number;
   /** A part could not be refreshed and older data is shown. */
   stale: boolean;
@@ -156,10 +157,23 @@ export async function getEventData(event: EventInfo): Promise<EventData> {
     }),
   );
 
-  const fetchedAt = perStage.length ? Math.min(...perStage.map((s) => s.at)) : Date.now();
-  const matches = withNext(
-    perStage.flatMap((s) => s.matches),
-    perStage.flatMap((s) => (s.bracket ? [s.bracket] : [])),
+  // The live feed: point by point, one call for the whole event. Optional, like the bracket.
+  const live = await cached(`live:${eventId}`, 5_000, async () => {
+    const d = await getJson(
+      `/ott/v1/get_live_scored_matches?event_id=${eventId}&page_num=1&per_page=100` +
+        '&only_published_rounds=true&load_sub_matches=true&only_in_progress=true',
+    );
+    return (Array.isArray(d) ? d : []) as Raw[];
+  }).catch(() => null);
+
+  const ats = [...perStage.map((s) => s.at), ...(live ? [cache.get(`live:${eventId}`)?.at ?? 0] : [])];
+  const fetchedAt = ats.length ? Math.max(...ats) : Date.now();
+  const matches = applyLive(
+    withNext(
+      perStage.flatMap((s) => s.matches),
+      perStage.flatMap((s) => (s.bracket ? [s.bracket] : [])),
+    ),
+    live?.value ?? [],
   );
   return { event, classes, matches, fetchedAt, stale };
 }
