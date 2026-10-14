@@ -5,6 +5,7 @@ import './globals.css';
 import { SITE_NAME } from '@/lib/site';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Stats } from '@/components/Stats';
 import { THEME_SCRIPT } from '@/lib/theme';
 
 // The same type pair as STTR: Familjen Grotesk for titles and figures, Instrument Sans for the rest.
@@ -65,8 +66,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Data från <a href="https://www.ettu.tv/" target="_blank" rel="noopener noreferrer">ettu.tv</a>, uppdateras var 10:e sekund under pågående matcher. TV-tider från <a href="https://www.svt.se/sport/bordtennis/guide-bordtennis-em-2026" target="_blank" rel="noopener noreferrer">SVT</a>. Tider i arrangörens lokala tid.
             </p>
             <p>Ingen officiell tjänst från ETTU eller Svenska Bordtennisförbundet.</p>
+            <p>Besöksstatistik utan cookies (Vercel Web Analytics).</p>
           </div>
         </footer>
+        <Stats />
       </body>
     </html>
   );

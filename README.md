@@ -57,6 +57,14 @@ used. When SVT changes the guide, rebuild it with curl and commit:
 curl -s https://www.svt.se/sport/bordtennis/guide-bordtennis-em-2026 | npm run --silent tv
 ```
 
+## Visitor statistics
+
+Vercel Web Analytics (`components/Stats.tsx`): no cookies and nothing stored on the device (a request
+hash, discarded after 24 h), so no consent banner. It must be enabled once in the Vercel dashboard
+(project → Analytics → Enable). The filters rewrite the query string, so only the first page view
+per path and page load is sent, without the query string: one visit = one event (the Hobby plan
+includes 50 000 events a month, shared by all projects on the account; reports cover one month).
+
 Not covered: EMs before 2025, which are only on results.ettu.site.
 
 This is not an official ETTU or SBTF service. Be gentle with the API: the server caches each stage
