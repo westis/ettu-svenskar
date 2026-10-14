@@ -94,7 +94,7 @@ export function MatchesView({ matches, classes, players, today, initialClass, in
           </div>
         )}
         {players.length > 1 && (
-          <div className="chips" role="group" aria-label="Spelare">
+          <div className="chips players-chips" role="group" aria-label="Spelare">
             <button type="button" className="chip" aria-pressed={player === null} onClick={() => setPlayer(null)}>
               Alla spelare
             </button>
@@ -108,6 +108,20 @@ export function MatchesView({ matches, classes, players, today, initialClass, in
               </button>
             ))}
           </div>
+        )}
+        {players.length > 1 && (
+          <label className="pick">
+            <span className="sr-only">Spelare</span>
+            <select className={player ? 'on' : undefined} value={player ?? ''}
+              onChange={(e) => setPlayer(e.target.value || null)}>
+              <option value="">Alla spelare</option>
+              {players.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.name}{p.won + p.lost > 0 ? ` (${score(p.won, p.lost)})` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
       </div>
 

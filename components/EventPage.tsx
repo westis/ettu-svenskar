@@ -33,7 +33,7 @@ export async function EventPage({ eventId, searchParams }: {
       <h1 className="title">{shortEventName(event.name, event.start)}</h1>
       <p className="meta">
         {event.start ? `${dateRange(event.start, event.end)} · ` : ''}
-        {matches.length} svenska matcher · uppdaterad {updated}
+        {matches.length} matcher · uppdaterad {updated}
       </p>
       {data.stale && (
         <p className="notice" role="status">ETTU svarar inte just nu. Du ser de senast hämtade resultaten.</p>
