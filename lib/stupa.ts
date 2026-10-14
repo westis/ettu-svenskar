@@ -8,15 +8,16 @@ import 'server-only';
 // older data instead of an error page.
 
 import {
+  type BracketInput,
   type ClassInfo,
   type EventInfo,
   type Match,
-  byStart,
   classLabel,
   classSort,
   isIndividual,
   listedEvents,
   stageMatches,
+  withNext,
 } from './model';
 
 const BASE = 'https://testbackend.stupaevents.com';
@@ -142,19 +143,33 @@ export async function getEventData(eventId: number): Promise<EventData | null> {
     stageLists.flat().map(async ({ cls, stage }) => {
       // A finished stage no longer changes.
       const ttl = stage.status === 'COMPLETED' ? 10 * 60_000 : 30_000;
-      const r = await cached(`gm:${stage.id}`, ttl, async () =>
-        stageMatches({
-          classId: cls.id,
-          classLabel: cls.label,
-          stageName: String(stage.name ?? ''),
-          groups: ((await getJson(`/ott/v1/get_group_matches?stage_id=${stage.id}`)) ?? []) as Raw[],
-        }),
-      );
+      const stageName = String(stage.name ?? '');
+      const r = await cached(`gm:${stage.id}`, ttl, async () => {
+        const groups = ((await getJson(`/ott/v1/get_group_matches?stage_id=${stage.id}`)) ?? []) as Raw[];
+        return {
+          matches: stageMatches({ classId: cls.id, classLabel: cls.label, stageName, groups }),
+          knockout: groups.some((g: Raw) => /knock/i.test(String(g?.name ?? ''))),
+        };
+      });
       stale ||= r.stale;
-      return { matches: r.value, at: cache.get(`gm:${stage.id}`)?.at ?? Date.now() };
+
+      // The bracket says where a winner goes next. Optional: without it the page just has no "Nästa".
+      let bracket: BracketInput | null = null;
+      if (r.value.knockout) {
+        const kb = await cached(`ko:${stage.id}`, ttl, async () => {
+          const d = await getJson(`/ott/v1/get_knockout_matches?stage_id=${stage.id}&only_published_rounds=true`);
+          return (d?.main_bracket ?? []) as Raw[];
+        }).catch(() => null);
+        if (kb) bracket = { classId: cls.id, classLabel: cls.label, stageName, rounds: kb.value };
+      }
+      return { matches: r.value.matches, bracket, at: cache.get(`gm:${stage.id}`)?.at ?? Date.now() };
     }),
   );
 
   const fetchedAt = perStage.length ? Math.min(...perStage.map((s) => s.at)) : Date.now();
-  return { event, classes, matches: perStage.flatMap((s) => s.matches).sort(byStart), fetchedAt, stale, hasTeamClasses };
+  const matches = withNext(
+    perStage.flatMap((s) => s.matches),
+    perStage.flatMap((s) => (s.bracket ? [s.bracket] : [])),
+  );
+  return { event, classes, matches, fetchedAt, stale, hasTeamClasses };
 }

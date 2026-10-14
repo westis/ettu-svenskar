@@ -20,6 +20,7 @@ export type Status = 'upcoming' | 'live' | 'done';
 export interface Player {
   key: string;
   name: string; // "Truls Moregård"
+  short: string; // "T. Moregård", for pairs
   code: string | null; // "SWE"
   home: boolean;
 }
@@ -37,6 +38,8 @@ export interface Match {
   classLabel: string; // "Herrsingel"
   round: string; // "Pool 7", "Åttondel", "Kval · 16-del"
   start: string | null; // "2026-10-14T14:15:00", venue time
+  /** false: ETTU has a slot but does not publish the time yet; show the day only. */
+  timeKnown: boolean;
   table: string | null;
   status: Status;
   a: Side; // a home side (Swedish)
@@ -46,6 +49,19 @@ export interface Match {
   /** won / lost from the Swedish side; null while not done or when both sides are Swedish. */
   outcome: 'won' | 'lost' | null;
   derby: boolean;
+  /** From the bracket, not yet in the match list: the opponent may be unknown (see oppLabel). */
+  pending: boolean;
+  /** Text for an unknown opponent: "vinnaren av A. Dorr / F. Bourrassaud – …". */
+  oppLabel: string | null;
+  /** For a knockout win: the Swedish side's next match. */
+  next: NextInfo | null;
+}
+
+export interface NextInfo {
+  round: string;
+  opp: string;
+  start: string | null;
+  timeKnown: boolean;
 }
 
 export interface ClassInfo {
@@ -160,16 +176,28 @@ function titleCase(s: string): string {
     .replace(/(^|[\s\-'’])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
 }
 
-/** "MOREGARD Truls" -> "Truls Moregård", "DE LAS HERAS Rafael" -> "Rafael De Las Heras". */
-export function displayName(raw: string, home = false): string {
+/** "MOREGARD Truls" -> first "Truls", last "Moregård"; "DE LAS HERAS Rafael" -> "Rafael", "De Las Heras". */
+export function nameParts(raw: string, home = false): { first: string; last: string } {
   const tokens = raw.trim().split(/\s+/);
   const isUpper = (t: string) => /\p{Lu}/u.test(t) && t === t.toUpperCase();
   let n = 0;
   while (n < tokens.length && isUpper(tokens[n])) n++;
-  if (n === 0 || n === tokens.length) return titleCase(raw.trim());
+  if (n === 0 || n === tokens.length) return { first: '', last: titleCase(raw.trim()) };
   const surnameRaw = tokens.slice(0, n).join(' ');
-  const surname = (home && SWEDISH_SPELLING[surnameRaw]) || titleCase(surnameRaw);
-  return `${tokens.slice(n).join(' ')} ${surname}`;
+  const last = (home && SWEDISH_SPELLING[surnameRaw]) || titleCase(surnameRaw);
+  return { first: tokens.slice(n).join(' '), last };
+}
+
+/** "MOREGARD Truls" -> "Truls Moregård". */
+export function displayName(raw: string, home = false): string {
+  const { first, last } = nameParts(raw, home);
+  return first ? `${first} ${last}` : last;
+}
+
+/** "T. Moregård": pairs are shown with initials. */
+export function shortName(raw: string, home = false): string {
+  const { first, last } = nameParts(raw, home);
+  return first ? `${first[0]}. ${last}` : last;
 }
 
 function playersOf(p: Raw): Player[] {
@@ -183,6 +211,7 @@ function playersOf(p: Raw): Player[] {
     return {
       key: String(d.user_role_id ?? d.name),
       name: displayName(String(d.name ?? '?'), home),
+      short: shortName(String(d.name ?? '?'), home),
       code: home ? HOME_CODE : code,
       home,
     };
@@ -291,6 +320,7 @@ export function toMatch(m: Raw, stage: StageInput, groupName: string | null): Ma
     classLabel: stage.classLabel,
     round: roundLabel(stage.stageName, groupName, m.round),
     start: m.start_time ?? m.slot?.start_time ?? null,
+    timeKnown: m.show_schedule_details !== false,
     table: tableOf(m),
     status,
     a,
@@ -298,6 +328,9 @@ export function toMatch(m: Raw, stage: StageInput, groupName: string | null): Ma
     games,
     outcome,
     derby,
+    pending: false,
+    oppLabel: null,
+    next: null,
   };
 }
 
@@ -319,6 +352,112 @@ export function byStart(x: Match, y: Match): number {
   const b = y.start ?? '9999';
   if (a !== b) return a < b ? -1 : 1;
   return classSort(x.classLabel) - classSort(y.classLabel) || x.id - y.id;
+}
+
+// ---- next match from the bracket --------------------------------------------------------------
+
+export interface BracketInput {
+  classId: number;
+  classLabel: string;
+  stageName: string;
+  /** `get_knockout_matches` data.main_bracket: rounds in order, each with `round_name` and `matches`. */
+  rounds: Raw[];
+}
+
+/** "Truls Moregård" for one player, "E. Dorr / F. Bourrassaud" for a pair. */
+export function sideText(players: Player[]): string {
+  if (players.length === 1) return players[0].name;
+  return players.map((p) => p.short).join(' / ');
+}
+
+function filled(p: Raw): boolean {
+  return (p?.participant_details ?? []).length > 0;
+}
+
+/**
+ * Adds what the bracket knows about each Swede's next knockout match: a `next` line on the match
+ * they won, and the next match itself (`pending`) when it is not in the match list yet, with the
+ * opponent if decided, else "vinnaren av A – B". A bye counts as a win. The last round has no next.
+ */
+export function withNext(matches: Match[], brackets: BracketInput[]): Match[] {
+  const byId = new Map(matches.map((m) => [m.id, m]));
+  const out = new Map(matches.map((m) => [m.id, m]));
+
+  for (const b of brackets) {
+    const rounds: Raw[] = b.rounds ?? [];
+    for (let ri = 0; ri < rounds.length - 1; ri++) {
+      for (const bm of rounds[ri].matches ?? []) {
+        const ours = byId.get(Number(bm.id));
+        let adv: Side | null = null;
+        if (ours && ours.status === 'done') {
+          adv = ours.a.won ? ours.a : ours.b.won ? ours.b : null;
+        } else if (!ours) {
+          // a bye: one filled slot, the other empty or "BYE", nothing played
+          const ps: Raw[] = bm.participants ?? [];
+          const status = bm.leg_details?.[0]?.status;
+          const real = ps.filter(filled);
+          if (status === 'SKIPPED' && real.length === 1) {
+            adv = { players: playersOf(real[0]), sets: 0, won: true, walkover: false };
+          }
+        }
+        if (!adv || !adv.players.some((p) => p.home)) continue;
+
+        const order = Number(bm.order);
+        const nm = (rounds[ri + 1].matches ?? []).find((x: Raw) => Number(x.order) === Math.ceil(order / 2));
+        if (!nm) continue;
+        const existing = byId.get(Number(nm.id));
+        if (existing && existing.status !== 'upcoming') continue;
+
+        const advKeys = new Set(adv.players.map((p) => p.key));
+        const oppSlot = (nm.participants ?? []).find(
+          (p: Raw) => filled(p) && !playersOf(p).some((x) => advKeys.has(x.key)),
+        );
+        let oppPlayers: Player[] = oppSlot ? playersOf(oppSlot) : [];
+        let oppLabel: string | null = null;
+        if (!oppPlayers.length) {
+          const sib = (rounds[ri].matches ?? []).find(
+            (x: Raw) => Number(x.order) === (order % 2 ? order + 1 : order - 1),
+          );
+          const sides: Raw[] = (sib?.participants ?? []).filter(filled);
+          const sibBye = sib?.leg_details?.[0]?.status === 'SKIPPED';
+          if (sides.length === 1 && sibBye) oppPlayers = playersOf(sides[0]);
+          else if (sides.length === 2) {
+            oppLabel = `vinnaren av ${sideText(playersOf(sides[0]))} – ${sideText(playersOf(sides[1]))}`;
+          } else oppLabel = 'motståndare inte klar';
+        }
+
+        const leg = nm.leg_details?.[0] ?? {};
+        const start: string | null = leg.start_time ?? null;
+        const timeKnown = nm.show_schedule_details !== false && !!start;
+        const round = roundLabel(b.stageName, null, { name: rounds[ri + 1].round_name ?? rounds[ri + 1].name });
+        const next: NextInfo = { round, opp: oppPlayers.length ? sideText(oppPlayers) : oppLabel!, start, timeKnown };
+
+        if (ours) out.set(ours.id, { ...ours, next });
+        if (!existing) {
+          const tables: number[] = leg.tables ?? [];
+          out.set(Number(nm.id), {
+            id: Number(nm.id),
+            classId: b.classId,
+            classLabel: b.classLabel,
+            round,
+            start,
+            timeKnown,
+            table: tables.length ? tables.join(', ') : null,
+            status: 'upcoming',
+            a: { players: adv.players, sets: 0, won: false, walkover: false },
+            b: { players: oppPlayers, sets: 0, won: false, walkover: false },
+            games: [],
+            outcome: null,
+            derby: oppPlayers.some((p) => p.home),
+            pending: true,
+            oppLabel,
+            next: null,
+          });
+        }
+      }
+    }
+  }
+  return [...out.values()].sort(byStart);
 }
 
 // ---- the Swedish players -------------------------------------------------------------------

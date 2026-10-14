@@ -30,8 +30,12 @@ What the code relies on (details in `lib/model.ts`):
 - Country: `selected_parents[].parent_abbr` ("SWE", "ETTU2" for neutral athletes); 2025 events only
   fill `parent_name` ("Sweden").
 - Class: `category_display_label` – "Men's Singles", "U15-BS", "MSU21".
-- Knockout rounds appear in `get_group_matches` once they are scheduled.
-  `get_knockout_matches?stage_id=…` has the whole bracket in advance (not used yet).
+- Knockout rounds appear in `get_group_matches` once both players are known.
+  `get_knockout_matches?stage_id=…&only_published_rounds=true` has the whole bracket in advance
+  (times and tables included; `show_schedule_details: false` = time not published yet). The next
+  match of a winner is round + 1, position ⌈order/2⌉; its other slot is fed by the neighbouring
+  match (order ± 1). The app uses this for "Nästa: …" and for Kommande rows whose opponent is not
+  decided yet ("vinnaren av A – B"). An empty slot has no `participant_details`; a bye is "BYE".
 - The API sometimes answers `{"msg":"SOME_ERROR_OCCURRED"}`; every call is retried and the last good
   answer is kept, so a failed refresh shows slightly older data with a notice.
 - Its CORS rules reject other sites, so all calls are made on the server (Next.js route rendering).
