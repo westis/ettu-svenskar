@@ -11,7 +11,7 @@ import { THEME_SCRIPT } from '@/lib/theme';
 const display = Familjen_Grotesk({ subsets: ['latin', 'latin-ext'], variable: '--font-display-face', display: 'swap' });
 const body = Instrument_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-body-face', display: 'swap' });
 
-const DESCRIPTION = 'Alla svenska matcher i bordtennis-EM: tider, motståndare, resultat live och SVT-sändningar.';
+const DESCRIPTION = 'Alla svenska matcher i bordtennis-EM: tider, motståndare, liveresultat och SVT-sändningar.';
 
 // Absolute URLs for og:image / og:url (Facebook needs them). Vercel sets the production domain.
 const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
